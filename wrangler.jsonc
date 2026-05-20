@@ -10,6 +10,12 @@
 	"observability": {
 		"enabled": true
 	},
+	"kv_namespaces": [
+		{
+		  "binding": "TICKETS_STORE",
+		  "id": "b1952cf466894f649688763ebbff8ea8"
+		}
+	  ],
 	"upload_source_maps": true,
 	"compatibility_flags": [
 	]
