@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "helpdesk-backend-cf",
+	"name": "ahj7-1-cf",
 	"main": "src/index.js",
 	"compatibility_date": "2026-05-20",
 	"observability": {
