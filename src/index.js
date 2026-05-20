@@ -1,4 +1,3 @@
-// Хранилище тикетов (в памяти, сбрасывается при перезагрузке Worker'а)
 const tickets = [
   {
     id: 'd8c41c67-7e2e-4b00-b5c3-709120a1d58c',
@@ -23,7 +22,7 @@ const tickets = [
   },
 ];
 
-// Вспомогательная функция для обёртки ответа в JSON
+// Функция для формирования JSON-ответа
 function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -31,17 +30,20 @@ function jsonResponse(data, status = 200) {
   });
 }
 
-// Основной обработчик запросов
+// Обработчик запросов
 export default {
   async fetch(request, env, ctx) {
-    // --- Настройка CORS ---
-    // Разрешаем запросы только с вашего GitHub Pages
-    const allowedOrigin = 'https://ksanr.github.io';
+    // --- Расширенная настройка CORS ---
     const origin = request.headers.get('Origin');
+    // Разрешаем конкретный origin или, если его нет, разрешаем все (для удобства тестов)
+    const allowedOrigin = origin || '*';
+
+    // Базовые CORS-заголовки
     const corsHeaders = {
       'Access-Control-Allow-Origin': allowedOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization', // на случай, если будут другие заголовки
+      'Access-Control-Max-Age': '86400', // чтобы браузер не слал preflight каждый раз
     };
 
     // Обработка предварительного запроса OPTIONS
@@ -49,12 +51,12 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
 
-    // Получаем URL и разбираем параметры
+    // Парсинг URL и параметров
     const url = new URL(request.url);
     const method = url.searchParams.get('method');
     const id = url.searchParams.get('id');
 
-    // Функция для добавления CORS-заголовков к любому ответу
+    // Вспомогательная функция для добавления CORS-заголовков к любому ответу
     function withCORS(response) {
       const newHeaders = new Headers(response.headers);
       Object.entries(corsHeaders).forEach(([key, value]) => newHeaders.set(key, value));
@@ -70,7 +72,6 @@ export default {
       // GET-запросы
       if (request.method === 'GET') {
         if (method === 'allTickets') {
-          // Возвращаем тикеты без description
           const list = tickets.map(({ description, ...rest }) => rest);
           return withCORS(jsonResponse(list));
         }
@@ -102,7 +103,6 @@ export default {
             created: Date.now(),
           };
           tickets.push(newTicket);
-          // Отдаём без description
           const { description: _, ...rest } = newTicket;
           return withCORS(jsonResponse(rest, 201));
         }
@@ -123,6 +123,7 @@ export default {
       // Если метод не найден
       return withCORS(jsonResponse({ error: 'Invalid method' }, 400));
     } catch (err) {
+      // Любая внутренняя ошибка тоже должна возвращать CORS-заголовки
       return withCORS(jsonResponse({ error: err.message }, 500));
     }
   }
